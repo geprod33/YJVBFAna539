@@ -559,7 +559,7 @@ const double MIN_JETPT  =30.0;
 const double MIN_JETBETA= 0.2;
 const double MAX_JETETA = 2.4;
 //for VBF study
-const double MAX_JETETA = 4.7;
+//const double MAX_JETETA = 4.7;
 
 
 
@@ -638,6 +638,9 @@ const double HELICUT=0.5;
 	nPassID=0;
 
 	for(unsigned int iele=0; iele < 2; iele++){
+	  
+           const pat::Electron* myEle
+	    = dynamic_cast<const pat::Electron*>(h.daughter(LEPZ)->daughter(iele)->masterClone().get());
 	  
 
 	  if(myEle->userFloat("cutIDCode")<2) continue; // 539 skim	  
@@ -828,69 +831,9 @@ const double HELICUT=0.5;
 
       bestHCandIndex++;//Tell user the jets and leps are from which candidate 
     
-      higgsPt_.push_back(higgsPt_local);
-      higgsEta_.push_back(higgsEta_local);
-      higgsPhi_.push_back(higgsPhi_local);
-      higgsM_.push_back(higgsM_local);
-      higgsMRefit_.push_back(higgsM_refit_local);
-
-      zllPt_.push_back(zllPt_local);
-      zllEta_.push_back(zllEta_local);
-      zllPhi_.push_back(zllPhi_local);
-      zllM_.push_back(zllM_local);
-      zlldR_.push_back(zlldR_local);
-
-      zjjPt_.push_back(zjjPt_local);
-      zjjEta_.push_back(zjjEta_local);
-      zjjPhi_.push_back(zjjPhi_local);
-      zjjM_.push_back(zjjM_local);
-      zjjMRefit_.push_back(zjjM_refit_local);
-      zjjdR_.push_back(zjjdR_local);
-
-      for(int isjet=0; isjet<2; isjet++)
-	{
-
-	  HjetIndex_.push_back(isjet);
-	  HjetHiggsIndex_.push_back(bestHCandIndex);
-	  HjetE_.push_back(myJet[isjet]->energy());
-	  HjetPt_.push_back(myJet[isjet]->pt());
-	  HjetEta_.push_back(myJet[isjet]->eta());
-	  HjetPhi_.push_back(myJet[isjet]->phi());
-	  
-	  
-	}
-
-      for(int isLep=0; isLep<2; isLep++)
-	{
-
-	  LeptonsIndex_.push_back(isLep);
-	  LeptonsHiggsIndex_.push_back(bestHCandIndex);
-	  LeptonsE_.push_back(myLepton[isLep]->energy());
-	  LeptonsPt_.push_back(myLepton[isLep]->pt());
-	  LeptonsEta_.push_back(myLepton[isLep]->eta());
-	  LeptonsPhi_.push_back(myLepton[isLep]->phi());
-          LeptonsType_.push_back(ilep);	  
-	  
-	}
 
 
-      heliLD_.push_back(heliLD_local);
-      heliLDRefit_.push_back(heliLD_refit_local);
 
-      costhetaNT1_.push_back(goodH.userFloat("costhetaNT1"));
-      costhetaNT2_.push_back(goodH.userFloat("costhetaNT2"));
-      phiNT_.push_back(goodH.userFloat("phiNT"));
-      phiNT1_.push_back(goodH.userFloat("phiNT1"));
-      costhetastarNT_.push_back(goodH.userFloat("costhetastarNT"));
-      
-      costhetaNT1Refit_.push_back(goodH.userFloat("costhetaNT1Refit"));
-      costhetaNT2Refit_.push_back(goodH.userFloat("costhetaNT2Refit"));
-      phiNTRefit_.push_back(goodH.userFloat("phiNTRefit"));
-      phiNT1Refit_.push_back(goodH.userFloat("phiNT1Refit"));
-      costhetastarNTRefit_.push_back(goodH.userFloat("costhetastarNTRefit"));
-
-      nBTags_.push_back(nBTags);
-      lepType_.push_back(ilep);
 
       // CHECK WHICH CUTS THIS HIGGS CANDIDATE PASSES
       int Mjjregion= 0;
@@ -913,13 +856,12 @@ const double HELICUT=0.5;
 	thisBit |= MH_SIGNAL;
 */
       
-      passBit_.push_back(Mjjregion);
 
 
 
     } // end of loop over Higgs candidates  
     
-  
+ } //end of looping over leptype 
 
  delete uncGetter;
 } // end of Fill()
