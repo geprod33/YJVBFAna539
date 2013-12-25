@@ -92,8 +92,29 @@ private:
   double EvtMaxMjj_;
   double EvtMaxEtajj_;
   int NBtagYJ_; 
-  std::vector<double> JetpuBetaYJ_;
   
+  double theOnehiggsPt_;
+  double theOnehiggsEta_;
+  double theOnehiggsPhi_;
+  double theOnehiggsM_;
+  double theOnehiggsMRefit_;
+
+  double theOneHzllPt_;
+  double theOneHzllEta_;
+  double theOneHzllPhi_;
+  double theOneHzllM_;
+  double theOneHzlldR_; // deltaR between two leptons
+
+  double theOneHzjjPt_;
+  double theOneHzjjEta_;
+  double theOneHzjjPhi_;
+  double theOneHzjjM_;
+  double theOneHzjjMRefit_;
+  double theOneHzjjdR_; // deltaR between two jets   
+
+
+
+  std::vector<double> JetpuBetaYJ_;
   std::vector<double> JetPt_;
   std::vector<double> JetEta_;
   std::vector<double> JetPhi_;
@@ -155,6 +176,7 @@ private:
   int numJets_;  
 
   int EvtType_;
+  int EvtLepType_;
   int n_pileup_;
   int n_pileup_true_;
 

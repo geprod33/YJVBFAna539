@@ -1,7 +1,7 @@
 /// @file
 /// File containing the definition of the methods associated to the class.
 ///
-///For VBF analysis YunJu Lu 20130505 
+///For 539 VBF analysis YunJu Lu 20131225 
 
 #include "DataFormats/Common/interface/View.h"//for refAt
 #include "DelPanj/TreeMaker/interface/YJJECHiggTree.hh"
@@ -192,10 +192,21 @@ void YJJECHiggTree::Fill(const edm::Event& iEvent, edm::EventSetup const& iSetup
   //  
   //============================================================================
 
+  EvtType_=-1;//1==signal region; 2 = sb region
+  EvtLepType_=-1;//0==electron; 1 = muon
+  int IndexthetheOneH=-999;// index of  the best H candidate in 1 event
+
 
 
   
+
+
+
+  int maxNBTag=-999;
+  float Zdiff=999; 
   bool isData = iEvent.isRealData();
+   
+
    HLTDoubleMu_=-999;
    HLTDoubleEle_=-999;
    HLTMu17TkMu8_=-999;
@@ -577,9 +588,12 @@ const double HELICUT=0.5;
 
   //initialize variables
   int hcand = -1;
-  int bestHCandIndex = -1;
   //LOOP IN 2 KINDS OF LEPTONS: ELECTRONS AND MUONS 
   for (int ilep=0; ilep<2; ilep++) {
+
+    //check cand which pass trigger path  
+    if(HLTDoubleEle_!=1&&ilep==0) continue;    
+    if( (HLTDoubleMu_!=1&&HLTMu17TkMu8_!=1)&&ilep==1) continue;
 
     hcand=-1;
 
@@ -796,7 +810,6 @@ const double HELICUT=0.5;
       double higgsEta_local = goodH.eta();
       double higgsPhi_local = goodH.phi();
       double higgsM_local   = goodH.mass();
-      double higgsM_refit_local = goodH.userFloat("HZZRefitMass");
 
       double zllPt_local  = Zll->pt();
       double zllEta_local = Zll->eta();
@@ -809,14 +822,12 @@ const double HELICUT=0.5;
       double zjjEta_local = Zjj->eta();
       double zjjPhi_local = Zjj->phi();
       double zjjM_local   = Zjj->mass();
-      double zjjM_refit_local = goodH.userFloat("ZjjRefitMass");
       double zjjdR_local  = deltaR(myJet[0]->eta(),myJet[0]->phi(),
 				   myJet[1]->eta(),myJet[1]->phi());
 
 
       
       double heliLD_local = goodH.userFloat("helyLD");
-      double heliLD_refit_local = goodH.userFloat("helyLDRefit");
 
       // check the dilepton Z mass
              if(zllM_local < MIN_MZ_LL)continue;
@@ -828,22 +839,28 @@ const double HELICUT=0.5;
      //helicity cut
        if(heliLD_local> HELICUT ) continue;
 
+       //the part to save theoneH
 
-      bestHCandIndex++;//Tell user the jets and leps are from which candidate 
-    
+       if(nBTags>maxNBTag)
+       {
+          maxNBTag=nBTags;
+          Zdiff=fabs(zjjM_local-91.2);
+          IndexthetheOneH=hcand;
+          EvtLepType_=ilep;
+       }
+       else if(nBTags==maxNBTag)
+       {
+          if(fabs(zjjM_local-91.2)<Zdiff)    
+          {
+            Zdiff=fabs(zjjM_local-91.2);
+            IndexthetheOneH=hcand;
+            EvtLepType_=ilep; 
+          } 
+
+       }
 
 
-
-
-      // CHECK WHICH CUTS THIS HIGGS CANDIDATE PASSES
-      int Mjjregion= 0;
-
-      if(zjjM_local > MIN_MZ_JJ && zjjM_local < MAX_MZ_JJ)
-	Mjjregion =1;
-      else
-	Mjjregion =2;
-
-
+      
       /*
       double qgld= 99999.0; // needs to be fixed
       if(qgld > MIN_QUARK_GLUON_LD_0BTAG)
@@ -855,13 +872,55 @@ const double HELICUT=0.5;
 	 higgsM_refit_local < MAX_MH_RATIO*mH_input)
 	thisBit |= MH_SIGNAL;
 */
-      
-
-
-
     } // end of loop over Higgs candidates  
     
  } //end of looping over leptype 
+
+      //SAVE THE ONE HIGGS
+ 
+      //GET THE HIGGS->ZZ->LLJJ COLLECTION FOR THE ONE
+      Handle<std::vector<pat::CompositeCandidate> > hzzlljj;
+      if(EvtLepType_==0) iEvent.getByLabel("hzzeejj", hzzlljj);
+      else iEvent.getByLabel("hzzmmjj", hzzlljj);
+
+         
+
+      const pat::CompositeCandidate & theOneH = (*hzzlljj)[IndexthetheOneH];
+
+
+      const reco::Candidate * Zll = theOneH.daughter(LEPZ);
+      const reco::Candidate * Zjj = theOneH.daughter(HADZ);
+ 
+
+       theOnehiggsPt_  = theOneH.pt();
+       theOnehiggsEta_ = theOneH.eta();
+       theOnehiggsPhi_ = theOneH.phi();
+       theOnehiggsM_   = theOneH.mass();
+       theOnehiggsMRefit_ = theOneH.userFloat("HZZRefitMass");
+
+       theOneHzllPt_  = Zll->pt();
+       theOneHzllEta_ = Zll->eta();
+       theOneHzllPhi_ = Zll->phi();
+       theOneHzllM_   = Zll->mass();
+      
+       theOneHzjjPt_  = Zjj->pt();
+       theOneHzjjEta_ = Zjj->eta();
+       theOneHzjjPhi_ = Zjj->phi();
+       theOneHzjjM_   = Zjj->mass();
+       theOneHzjjMRefit_ = theOneH.userFloat("ZjjRefitMass");
+     
+
+      // CHECK the one HIGGS CANDIDATE is SR or SB
+
+      if(theOneHzjjM_ > MIN_MZ_JJ && theOneHzjjM_ < MAX_MZ_JJ)
+        EvtType_=1;
+      else
+	EvtType_ =2;
+
+
+
+
+
 
  delete uncGetter;
 } // end of Fill()
@@ -907,9 +966,35 @@ YJJECHiggTree::SetBranches(){
   AddBranch(&numJets_,"numJets_");
 
   AddBranch(&EvtType_,"EvtType_");
+  AddBranch(&EvtLepType_,"EvtLeoType_");
+
+  AddBranch(&theOnehiggsPt_,"theOnehiggsPt");
+  AddBranch(&theOnehiggsEta_,"theOnehiggsEta");
+  AddBranch(&theOnehiggsPhi_,"theOnehiggsPhi");
+  AddBranch(&theOnehiggsM_,"theOnehiggsM");
+  AddBranch(&theOnehiggsMRefit_,"theOnehiggsMRefit");
+
+  AddBranch(&theOneHzllPt_,"theOneHzllPt");
+  AddBranch(&theOneHzllEta_,"theOneHzllEta");
+  AddBranch(&theOneHzllPhi_,"theOneHzllPhi");
+  AddBranch(&theOneHzllM_,"theOneHzllM");
+  AddBranch(&theOneHzlldR_,"theOneHzlldR");
+
+  AddBranch(&theOneHzjjPt_,"theOneHzjjPt");
+  AddBranch(&theOneHzjjEta_,"theOneHzjjEta");
+  AddBranch(&theOneHzjjPhi_,"theOneHzjjPhi");
+  AddBranch(&theOneHzjjM_,"theOneHzjjM");
+  AddBranch(&theOneHzjjMRefit_,"theOneHzjjMRefit");
+  AddBranch(&theOneHzjjdR_,"theOneHzjjdR");
 
   AddBranch(&n_pileup_,"n_pileup_");
   AddBranch(&n_pileup_true_,"n_pileup_true_");
+
+  
+
+
+
+
 
   AddBranch(&genHmass_,"genHmass_");
   
@@ -1043,9 +1128,28 @@ YJJECHiggTree::Clear(){
   numJets_= DUMMY;  
 
   EvtType_=DUMMY;
-
+  EvtLepType_=DUMMY;
   n_pileup_=DUMMY;
   n_pileup_true_=DUMMY;
+
+   theOnehiggsPt_=DUMMY;
+   theOnehiggsEta_=DUMMY;
+   theOnehiggsPhi_=DUMMY;
+   theOnehiggsM_=DUMMY;
+   theOnehiggsMRefit_=DUMMY;
+
+   theOneHzllPt_=DUMMY;
+   theOneHzllEta_=DUMMY;
+   theOneHzllPhi_=DUMMY;
+   theOneHzllM_=DUMMY;
+   theOneHzlldR_=DUMMY; // deltaR between two leptons
+
+   theOneHzjjPt_=DUMMY;
+   theOneHzjjEta_=DUMMY;
+   theOneHzjjPhi_=DUMMY;
+   theOneHzjjM_=DUMMY;
+   theOneHzjjMRefit_=DUMMY;
+   theOneHzjjdR_=DUMMY; // deltaR between two jets   
 
 
   genHmass_=DUMMY;
