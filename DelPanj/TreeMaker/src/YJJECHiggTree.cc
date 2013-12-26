@@ -413,7 +413,7 @@ if(!isData) {
     edm::Handle<std::vector<pat::Jet> > JetHandle;
     iEvent.getByLabel("cleanPatJetsNoPUIsoLept",JetHandle);
 //   iEvent.getByLabel("cleanPatJetsNoPUIsoLept",JetHandle);
-    const std::vector<pat::Jet>* jets = JetHandle.product();
+    const std::vector<pat::Jet>* patjetsVec = JetHandle.product();
 
 
 //test pu jet // not working, not save properly in skim?
@@ -513,49 +513,35 @@ edm::RefToBase<pat::Jet> jetRef(edm::Ref<PFJetCollectionAB>(jetColl,njetInColl))
    // check jet eta <4.7 for VBF jet require
    // note that eta< 2.4 and "isTaggable" and "puBeat"(has eta cut) are applied in dijet loops later after saving VBF information 
    
-    int nj1=0;
+ /*   int nj1=0;
     int nGoodJets=0;
     bool passJetWin= false;
     bool passJetSB= false;
     std:vector<int> LepLapJets; //a good jet loose id ,pt 30 eta4.7, no lepton overlap
 
     //cout<<"TD "<<endl;
-    bool UP =true;
-    for(std::vector<pat::Jet>::const_iterator jet1 =jets->begin();jet1!=jets->end();jet1++)
+	    bool UP =true;
+    for(std::vector<pat::Jet>::const_iterator jet1Itr =patjetsVec->begin();jet1Itr!=patjetsVec->end();jet1Itr++)
     {
       nj1++;
 
-     //Scale jet
-    /*      
-    double jeta = jet1->eta();
-         if (jeta >  5.19) jeta =  5.19;
-    else if (jeta < -5.19) jeta = -5.19;
-    try  // getUncertainty crashes if out of bounds -- catching and ignoring 
-    {
-        uncGetter->setJetPt (jet1->pt());
-        uncGetter->setJetEta(jeta);
-        double unc = 1. + (UP?1.:-1.) * uncGetter->getUncertainty(UP);
-        cout<<"##########################################################Uncertainty :"<<unc<<endl;
-        
-    }catch(...){}
-*/
     //ScaleJet(pat::Jet & dest, const pat::Jet * j,const bool UP);
-    ScaleJet(j1,dynamic_cast<const pat::Jet *>(&*jet1),SetJEC_C);
+    ScaleJet(j1,dynamic_cast<const pat::Jet *>(&*jet1Itr),SetJEC_C);
     //cout<<j1.pt()<<" jet1 "<<jet1->pt()<<" nJet "<<nj1<<endl;
 
 
       //if(jet1->pt()<30) continue;
       if(j1.pt()<30) continue;//j1 is fater jec
       if(fabs(j1.eta())>4.7) continue;
-      if(!passLooseJetID(&*jet1)) continue;
+      if(!passLooseJetID(&*jet1Itr)) continue;
 
  //     cout<<nj1<<" PUID "<<jet1->userInt("puJetIdFlag")<<" "<<jet1->userFloat("puJetIdMVA")<<endl;     
 
       //if(jet1->userInt("isTaggable")==0) continue;//use charge tracks has |eta|<2.4
       //if(jet1->userFloat("puBeta")<0.2) continue;
       nGoodJets++;
-    }//jet1 loop
-
+    }//jet1Itr loop
+*/
     //check di jet win and maxmjj maxetajj in 1 event
    //find out the highest btag di-jet pair to save 
 //cout<<"################################### Start Event "<<iEvent.id().event()<<endl;
@@ -902,7 +888,16 @@ const double HELICUT=0.5;
       const reco::Candidate * Zll = theOneH.daughter(LEPZ);
       const reco::Candidate * Zjj = theOneH.daughter(HADZ);
  
-
+      const reco::Candidate*  theOneLep[2];  
+      for(unsigned int il=0; il < 2; il++)
+      {  	theOneLep[il]= theOneH.daughter(LEPZ)->daughter(il)->masterClone().get();}
+ 
+      const pat::Jet * theOneJet[2];
+      for(unsigned int ijet=0; ijet < 2; ijet++)
+      {	theOneJet[ijet] =
+	  dynamic_cast<const pat::Jet *>(theOneH.daughter(HADZ)->daughter(ijet)->
+      					 masterClone().get());
+     }
        theOnehiggsPt_  = theOneH.pt();
        theOnehiggsEta_ = theOneH.eta();
        theOnehiggsPhi_ = theOneH.phi();
@@ -924,14 +919,54 @@ const double HELICUT=0.5;
       // CHECK the one HIGGS CANDIDATE is SR or SB
 
       if(theOneHzjjM_ > MIN_MZ_JJ && theOneHzjjM_ < MAX_MZ_JJ)
-        EvtType_=1;
+      {  
+         EvtType_=1;
+         _nPassed++;
+      }
       else
+      { 
 	EvtType_ =2;
+        _nSB++;  
+      } 
+
+      
+
+
+
+        if(HLTDoubleMu_==1) {_nPFinalHLTDoubleMu++;}
+        if(HLTDoubleEle_==1){_nPFinalHLTDoubleEle++;}
+        if(HLTMu17TkMu8_==1){_nPFinalHLTMu17TkMu8++;}
+
+
+
 
       //cout<<"event id (the one)"<<_nEvents<<" Leptype"<<EvtLepType_ <<" All higgs "<<theOnehiggsPt_<<" Btag "<<maxNBTag<<" Mjj "<<Zjj->mass()<<endl;
 
 
 //cin.get();
+    for(std::vector<pat::Jet>::const_iterator jet1Itr =patjetsVec->begin();jet1Itr!=patjetsVec->end();jet1Itr++)
+    {
+      
+
+    ScaleJet(j1JEC,dynamic_cast<const pat::Jet *>(&*jet1Itr),SetJEC_C);
+
+
+      if(j1JEC.pt()<30) continue;//j1JEC is fater jec
+      if(fabs(j1JEC.eta())>4.7) continue;
+      if(!passLooseJetID(&*jet1Itr)) continue;
+    
+    bool isTheOneHjet=false; 
+    if(fabs(theOneJet[0]->pt()-j1JEC.pt())<0.001||fabs(theOneJet[1]->pt()-j1JEC.pt())<0.001)
+    isTheOneHjet=true;
+
+    JetPt_.push_back(j1JEC.pt());
+    JetEta_.push_back(j1JEC.eta());
+    JetPhi_.push_back(j1JEC.phi());
+    JetEn_.push_back(j1JEC.energy());
+    JetFromtheOneH_.push_back(isTheOneHjet);
+    
+    }//jet1Itr loop
+
 
 
  delete uncGetter;
@@ -941,44 +976,13 @@ const double HELICUT=0.5;
 void  
 YJJECHiggTree::SetBranches(){
 
-  AddBranch(&eleRho_, "eleRho");
-  AddBranch(&muoRho_, "muoRho");
-  AddBranch(&metSig_, "metSig");
-
-  AddBranch(&EvtMaxMjj_, "EvtMaxMjj");
-  AddBranch(&EvtMaxEtajj_, "EvtMaxEtajj");
   AddBranch(&NBtagYJ_,"NBtagYJ_"); 
-  
-  AddBranch(&JetpuBetaYJ_,"JetpuBetaYJ_");  
- 
-  AddBranch(&JetPt_, "JetPt_");
-  AddBranch(&JetEta_, "JetEta_");
-  AddBranch(&JetPhi_, "JetPhi_");
-  AddBranch(&JetM_, "JetM_");
-  AddBranch(&JetEn_, "JetEn_");
-  AddBranch(&JetJetProb_,"JetJetProb_");
-  AddBranch(&JetFromH_, "JetFromH_"); 
-  AddBranch(&JetFromSB_, "JetFromSB_"); 
- 
-  AddBranch(&LeptonsE_,"LeptonsE_");
-  AddBranch(&LeptonsPt_,"LeptonsPt_");
-  AddBranch(&LeptonsEta_,"LeptonsEta_");
-  AddBranch(&LeptonsPhi_,"LeptonsPhi_");
- AddBranch(&LeptonsType_,"LeptonsType_"); 
-
-  AddBranch(&heliLD_,"heliLD_");
-  AddBranch(&costhetaNT1_,"costhetaNT1_");
-  AddBranch(&costhetaNT2_,"costhetaNT2_");
-  AddBranch(&phiNT_,"phiNT_");
-  AddBranch(&phiNT1_,"phiNT1_");
-  AddBranch(&costhetastarNT_,"costhetastarNT_");
-   
-  AddBranch(&Hpt_,"Hpt_"); 
-  AddBranch(&Hm_,"Hm_");
-  AddBranch(&numJets_,"numJets_");
-
   AddBranch(&EvtType_,"EvtType_");
   AddBranch(&EvtLepType_,"EvtLeoType_");
+  AddBranch(&genHmass_,"genHmass_");
+  AddBranch(&HLTDoubleMu_,"HLTDoubleMu_");
+  AddBranch(&HLTDoubleEle_,"HLTDoubleEle_");
+  AddBranch(&HLTMu17TkMu8_,"HLTMu17TkMu8_");
 
   AddBranch(&theOnehiggsPt_,"theOnehiggsPt");
   AddBranch(&theOnehiggsEta_,"theOnehiggsEta");
@@ -1002,147 +1006,61 @@ YJJECHiggTree::SetBranches(){
   AddBranch(&n_pileup_,"n_pileup_");
   AddBranch(&n_pileup_true_,"n_pileup_true_");
 
+  //start vector variable
+  AddBranch(&HJetE_,"HJetE_");
+  AddBranch(&HJetPt_,"HJetPt_");
+  AddBranch(&HJetEta_,"HJetEta_");
+  AddBranch(&HJetPhi_,"HJetPhi_");
   
-
-
-
-
-
-  AddBranch(&genHmass_,"genHmass_");
+  AddBranch(&HLeptonsE_,"HLeptonsE_");
+  AddBranch(&HLeptonsPt_,"HLeptonsPt_");
+  AddBranch(&HLeptonsEta_,"HLeptonsEta_");
+  AddBranch(&HLeptonsPhi_,"HLeptonsPhi_");
   
-
-   AddBranch(&HLTDoubleMu_,"HLTDoubleMu_");
-   AddBranch(&HLTDoubleEle_,"HLTDoubleEle_");
-   AddBranch(&HLTMu17TkMu8_,"HLTMu17TkMu8_");
-
-/*
-  AddBranch(&higgsPt_,"higgsPt");
-  AddBranch(&higgsEta_,"higgsEta");
-  AddBranch(&higgsPhi_,"higgsPhi");
-  AddBranch(&higgsM_,"higgsM");
-  AddBranch(&higgsMRefit_,"higgsMRefit");
-
-  AddBranch(&zllPt_,"zllPt");
-  AddBranch(&zllEta_,"zllEta");
-  AddBranch(&zllPhi_,"zllPhi");
-  AddBranch(&zllM_,"zllM");
-  AddBranch(&zlldR_,"zlldR");
-
-  AddBranch(&zjjPt_,"zjjPt");
-  AddBranch(&zjjEta_,"zjjEta");
-  AddBranch(&zjjPhi_,"zjjPhi");
-  AddBranch(&zjjM_,"zjjM");
-  AddBranch(&zjjMRefit_,"zjjMRefit");
-  AddBranch(&zjjdR_,"zjjdR");
-
-  AddBranch(&HjetIndex_,"HjetIndex");
-  AddBranch(&HjetHiggsIndex_,"HjetHiggsIndex_");
-  AddBranch(&HjetE_,"HjetE");
-  AddBranch(&HjetPt_,"HjetPt");
-  AddBranch(&HjetEta_,"HjetEta");
-  AddBranch(&HjetPhi_,"HjetPhi");
-  
-  AddBranch(&LeptonsIndex_,"LeptonsIndex");
-  AddBranch(&LeptonsHiggsIndex_,"LeptonsHiggsIndex_");
  
-  AddBranch(&heliLD_,"heliLD");
-  AddBranch(&costhetaNT1_,"costhetaNT1");
-  AddBranch(&costhetaNT2_,"costhetaNT2");
-  AddBranch(&phiNT_,"phiNT");
-  AddBranch(&phiNT1_,"phiNT1");
-  AddBranch(&costhetastarNT_,"costhetastarNT");
-  
-  AddBranch(&heliLDRefit_,"heliLDRefit");
-  AddBranch(&costhetaNT1Refit_,"costhetaNT1Refit");
-  AddBranch(&costhetaNT2Refit_,"costhetaNT2Refit");
-  AddBranch(&phiNTRefit_,"phiNTRefit");
-  AddBranch(&phiNT1Refit_,"phiNT1Refit");
-  AddBranch(&costhetastarNTRefit_,"costhetastarNTRefit");
+  AddBranch(&JetPt_, "JetPt_");
+  AddBranch(&JetEta_, "JetEta_");
+  AddBranch(&JetPhi_, "JetPhi_");
+  AddBranch(&JetEn_, "JetEn_");
+  AddBranch(&JetFromtheOneH_, "JetFromtheOneH_"); 
+ 
+ 
 
-  AddBranch(&nBTags_,"nBTags");
-  AddBranch(&lepType_,"lepType");
-  AddBranch(&passBit_,"passBit");
-*/
+
+  AddBranch(&heliLD_,"heliLD_");
+  AddBranch(&costhetaNT1_,"costhetaNT1_");
+  AddBranch(&costhetaNT2_,"costhetaNT2_");
+  AddBranch(&phiNT_,"phiNT_");
+  AddBranch(&phiNT1_,"phiNT1_");
+  AddBranch(&costhetastarNT_,"costhetastarNT_");
+   
+
+  
+
+
+
+
+
 
 }
 
 void  
 YJJECHiggTree::Clear(){
 
-  eleRho_ = DUMMY;
-  muoRho_ = DUMMY;
 
-  metSig_ = DUMMY;
-
-  EvtMaxMjj_= DUMMY;
-  EvtMaxEtajj_= DUMMY;
-  NBtagYJ_= DUMMY;
-
-
-
- 
-  JetpuBetaYJ_.clear();
-  JetPt_.clear();
-  JetEta_.clear();
-  JetPhi_.clear();
-  JetM_.clear();
-  JetEn_.clear();
- JetJetProb_.clear();
-  JetFromH_.clear();
-  JetFromSB_.clear();
-
-
-  higgsPt_.clear();
-  higgsEta_.clear();
-  higgsPhi_.clear();
-  higgsM_.clear();
-  higgsMRefit_.clear();
-
-  zllPt_.clear();
-  zllEta_.clear();
-  zllPhi_.clear();
-  zllM_.clear();
-  zlldR_.clear();
-
-  zjjPt_.clear();
-  zjjEta_.clear();
-  zjjPhi_.clear();
-  zjjM_.clear();
-  zjjMRefit_.clear();
-  zjjdR_.clear();
-
-  HjetIndex_.clear();
-  HjetHiggsIndex_.clear();
-  HjetE_.clear();
-  HjetPt_.clear();
-  HjetEta_.clear();
-  HjetPhi_.clear();
-  
-  LeptonsIndex_.clear();
-  LeptonsHiggsIndex_.clear();
-  LeptonsE_.clear();
-  LeptonsPt_.clear();
-  LeptonsEta_.clear();
-  LeptonsPhi_.clear();
-  LeptonsType_.clear();
-  
-
-
-  heliLD_=DUMMY;
-  costhetaNT1_= DUMMY;
-  costhetaNT2_= DUMMY;
-  phiNT_= DUMMY;
-  phiNT1_= DUMMY;
-  costhetastarNT_= DUMMY;
-  
-  Hpt_=DUMMY;
-  Hm_=DUMMY;
-  numJets_= DUMMY;  
-
-  EvtType_=DUMMY;
+   EvtType_=DUMMY;
   EvtLepType_=DUMMY;
   n_pileup_=DUMMY;
   n_pileup_true_=DUMMY;
+   genHmass_=DUMMY;
+  
+
+   HLTDoubleMu_=DUMMY;
+   HLTDoubleEle_=DUMMY;
+   HLTMu17TkMu8_=DUMMY;
+
+
+   NBtagYJ_= DUMMY;
 
    theOnehiggsPt_=DUMMY;
    theOnehiggsEta_=DUMMY;
@@ -1163,26 +1081,34 @@ YJJECHiggTree::Clear(){
    theOneHzjjMRefit_=DUMMY;
    theOneHzjjdR_=DUMMY; // deltaR between two jets   
 
+  HJetE_.clear();
+  HJetPt_.clear();
+  HJetEta_.clear();
+  HJetPhi_.clear();
 
-  genHmass_=DUMMY;
+  HLeptonsE_.clear();
+  HLeptonsPt_.clear();
+  HLeptonsEta_.clear();
+  HLeptonsPhi_.clear();
 
-   HLTDoubleMu_=DUMMY;
-   HLTDoubleEle_=DUMMY;
-   HLTMu17TkMu8_=DUMMY;
+
+ 
+  JetPt_.clear();
+  JetEta_.clear();
+  JetPhi_.clear();
+  JetEn_.clear();
+  JetFromtheOneH_.clear(); 
 
 
-/* 
-  heliLDRefit_.clear();
-  costhetaNT1Refit_.clear();
-  costhetaNT2Refit_.clear();
-  phiNTRefit_.clear();
-  phiNT1Refit_.clear();
-  costhetastarNTRefit_.clear();
+ 
+  
+  heliLD_=DUMMY;
+  costhetaNT1_= DUMMY;
+  costhetaNT2_= DUMMY;
+  phiNT_= DUMMY;
+  phiNT1_= DUMMY;
+  costhetastarNT_= DUMMY;
 
-  nBTags_.clear();
-  lepType_.clear();
-  passBit_.clear();
-*/
 }
 
 bool YJJECHiggTree::passLooseJetID(const pat::Jet* recjet)
@@ -1230,201 +1156,3 @@ void YJJECHiggTree::ScaleJet(pat::Jet & dest, const pat::Jet * j,const int SetJE
     dest.setP4(p);
 }
 
-/*
-  eID01.push_back(myEle->pt());
-  eID02.push_back(myEle->superCluster()->eta());
-  eID03.push_back(myEle->deltaEtaSuperClusterTrackAtVtx());
-  eID04.push_back(myEle->deltaPhiSuperClusterTrackAtVtx());
-  eID05.push_back(myEle->sigmaIetaIeta());
-  eID06.push_back(myEle->hadronicOverEm());
-  eID07.push_back(myEle->userFloat("dxy"));
-  eID08.push_back(myEle->userFloat("dz"));
-  eID09.push_back(fabs(1.0/myEle->ecalEnergy() - 
-  myEle->eSuperClusterOverP()/myEle->ecalEnergy()));
-  eID10.push_back(myEle->convDcot());
-  eID11.push_back(myEle->convDist());
-  eID12.push_back(myEle->userFloat("hasMatchConv"));
-  eID13.push_back(myEle->gsfTrack().get()->trackerExpectedHitsInner().numberOfHits());
-	  
-  double iso1 = myEle->chargedHadronIso();
-  double iso2 = myEle->neutralHadronIso();
-  double iso3 = myEle->photonIso();
-	  
-  ElectronEffectiveArea::ElectronEffectiveAreaTarget effAreaTarget_ = 
-  isData? ElectronEffectiveArea::kEleEAData2011:
-  ElectronEffectiveArea::kEleEAFall11MC;
-      
-  ElectronEffectiveArea::ElectronEffectiveAreaType effAreaType_ =
-  ElectronEffectiveArea::kEleGammaAndNeutralHadronIso03;      
- 
-  double AEff = ElectronEffectiveArea::GetElectronEffectiveArea
-  (effAreaType_, fabs(myEle->superCluster()->eta()), effAreaTarget_);
-
-  double iso4 = iso1 + std::max(0.0, iso2+iso3-ele_rho*AEff);
-	  
-  eID14.push_back(iso1);
-  eID15.push_back(iso2);
-  eID16.push_back(iso3);
-  eID17.push_back(iso4);
-*/
-
-
-/*
-  double pt    =  myMuo->pt();
-  double eta   =  myMuo->eta();
-  double iso1  =  myMuo->pfIsolationR04().sumChargedHadronPt;
-  double iso2  =  myMuo->pfIsolationR04().sumNeutralHadronEt;
-  double iso3  =  myMuo->pfIsolationR04().sumPhotonEt;
-  double isoPU =  myMuo->pfIsolationR04().sumPUPt;    
-  double iso4Beta = iso1 + std::max(iso3+iso2-0.5*isoPU,0.);
-  MuonEffectiveArea::MuonEffectiveAreaTarget effAreaTarget_ = 
-  isData? MuonEffectiveArea::kMuEAData2012:
-  MuonEffectiveArea::kMuEAData2012;
-  // 	MuonEffectiveArea::kMuEAFall11MC;
-w
-  MuonEffectiveArea::MuonEffectiveAreaType effAreaType_= 
-  MuonEffectiveArea::kMuGammaAndNeutralHadronIso04;
-  double Area = MuonEffectiveArea::GetMuonEffectiveArea(
-  effAreaType_, fabs(eta), effAreaTarget_);
-
-  double iso4Rho =  iso1 + std::max(iso3+iso2-muo_rho*Area,0.);
-  double isoBeta = iso4Beta/pt;	  
-  double isoRho  = iso4Rho/pt;
-
-
-  muID01.push_back(isoBeta);
-  // 	  muID01.push_back(myMuo->isGlobalMuon());
-  muID02.push_back(myMuo->isPFMuon());
-  muID03.push_back(myMuo->isTrackerMuon());
-  if(myMuo->isTrackerMuon() && myMuo->isGlobalMuon()){
-  muID04.push_back(myMuo->globalTrack()->normalizedChi2());
-  muID05.push_back(myMuo->globalTrack()->hitPattern().numberOfValidMuonHits());
-  muID06.push_back(myMuo->numberOfMatchedStations());
-  muID07.push_back(myMuo->dB());
-  double dzV =myMuo->userFloat("dzVtx") ;
-  muID08.push_back(dzV);
-  muID09.push_back(myMuo->innerTrack()->hitPattern().numberOfValidPixelHits());
-  muID10.push_back(myMuo->innerTrack()->hitPattern().trackerLayersWithMeasurement());
-  }
-  muID11.push_back(myMuo->pfIsolationR04().sumChargedHadronPt);
-  muID12.push_back(myMuo->pfIsolationR04().sumNeutralHadronEt);
-  muID13.push_back(myMuo->pfIsolationR04().sumPhotonEt);
-  muID14.push_back(myMuo->pfIsolationR04().sumPUPt);
-  muID15.push_back(isoRho);
-*/
-
-/*
-
-higgsPt_  = DUMMY;
-higgsEta_ = DUMMY;
-higgsPhi_ = DUMMY;
-higgsM_   = DUMMY;
-
-zllPt_  = DUMMY;
-zllEta_ = DUMMY;
-zllPhi_ = DUMMY;
-zllM_   = DUMMY;
-
-zjjPt_  = DUMMY;
-zjjEta_ = DUMMY;
-zjjPhi_ = DUMMY;
-zjjM_   = DUMMY;
-
-
-int arraySize = sizeof(jetPt_)/sizeof(jetPt_[0]);
-
-for(int i=0; i<arraySize;i++)
-{
-jetPt_[i] =DUMMY;
-jetEta_[i]=DUMMY;
-jetPhi_[i]=DUMMY;
-jetE_[i]  =DUMMY;
-jetRefitPt_[i] =DUMMY;
-jetRefitEta_[i]=DUMMY;
-jetRefitPhi_[i]=DUMMY;
-jetRefitE_[i]=DUMMY;
-
-}
-lepType_ = -1;
-  
-arraySize = sizeof(lepPt_)/sizeof(lepPt_[0]);
-
-for(int i=0; i<arraySize;i++)
-{
-lepPt_[i] =DUMMY;
-lepEta_[i]=DUMMY;
-lepPhi_[i]=DUMMY;
-lepE_[i]  =DUMMY;
-
-}
-
-AddBranch(&eID01, "eID01");
-AddBranch(&eID02, "eID02");
-AddBranch(&eID03, "eID03");
-AddBranch(&eID04, "eID04");
-AddBranch(&eID05, "eID05");
-AddBranch(&eID06, "eID06");
-AddBranch(&eID07, "eID07");
-AddBranch(&eID08, "eID08");
-AddBranch(&eID09, "eID09");
-AddBranch(&eID10, "eID10");
-AddBranch(&eID11, "eID11");
-AddBranch(&eID12, "eID12");
-AddBranch(&eID13, "eID13");
-AddBranch(&eID14, "eID14");
-AddBranch(&eID15, "eID15");
-AddBranch(&eID16, "eID16");
-AddBranch(&eID17, "eID17");
-
-eID01.clear();
-eID02.clear();
-eID03.clear();
-eID04.clear();
-eID05.clear();
-eID06.clear();
-eID07.clear();
-eID08.clear();
-eID09.clear();
-eID10.clear();
-eID11.clear();
-eID12.clear();
-eID13.clear();
-eID14.clear();
-eID15.clear();
-eID16.clear();
-eID17.clear();
-
-AddBranch(&muID01, "muID01");
-AddBranch(&muID02, "muID02");
-AddBranch(&muID03, "muID03");
-AddBranch(&muID04, "muID04");
-AddBranch(&muID05, "muID05");
-AddBranch(&muID06, "muID06");
-AddBranch(&muID07, "muID07");
-AddBranch(&muID08, "muID08");
-AddBranch(&muID09, "muID09");
-AddBranch(&muID10, "muID10");
-AddBranch(&muID11, "muID11");
-AddBranch(&muID12, "muID12");
-AddBranch(&muID13, "muID13");
-AddBranch(&muID14, "muID14");
-AddBranch(&muID15, "muID15");
-
-muID01.clear();
-muID02.clear();
-muID03.clear();
-muID04.clear();
-muID05.clear();
-muID06.clear();
-muID07.clear();
-muID08.clear();
-muID09.clear();
-muID10.clear();
-muID11.clear();
-muID12.clear();
-muID13.clear();
-muID14.clear();
-muID15.clear();
-
-
-*/

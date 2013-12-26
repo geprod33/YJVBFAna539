@@ -84,13 +84,18 @@ private:
   muSelector mu2012ID_;
 
   TTree* tree_;
-
-  double eleRho_;
-  double muoRho_;
-  double metSig_;
   
-  double EvtMaxMjj_;
-  double EvtMaxEtajj_;
+
+  int EvtType_;
+  int EvtLepType_;
+  int n_pileup_;
+  int n_pileup_true_;
+  double genHmass_;
+
+  int  HLTDoubleMu_;
+  int HLTDoubleEle_;
+  int HLTMu17TkMu8_;
+
   int NBtagYJ_; 
   
   double theOnehiggsPt_;
@@ -113,53 +118,26 @@ private:
   double theOneHzjjdR_; // deltaR between two jets   
 
 
+  //save hjet and hlep
+  std::vector<double> HJetE_;
+  std::vector<double> HJetPt_;
+  std::vector<double> HJetEta_;
+  std::vector<double> HJetPhi_;
 
-  std::vector<double> JetpuBetaYJ_;
+  std::vector<double> HLeptonsE_;
+  std::vector<double> HLeptonsPt_;
+  std::vector<double> HLeptonsEta_;
+  std::vector<double> HLeptonsPhi_;
+
+  //save all jets 
   std::vector<double> JetPt_;
   std::vector<double> JetEta_;
   std::vector<double> JetPhi_;
-  std::vector<double> JetM_;
   std::vector<double> JetEn_;
-  std::vector<double> JetJetProb_;
-  std::vector<int> JetFromH_;
-  std::vector<int> JetFromSB_;
-
-  std::vector<double> LeptonsE_;
-  std::vector<double> LeptonsPt_;
-  std::vector<double> LeptonsEta_;
-  std::vector<double> LeptonsPhi_;
-  std::vector<double> LeptonsType_;
+  std::vector<int> JetFromtheOneH_;
 
 
-
-  std::vector<double> higgsPt_;
-  std::vector<double> higgsEta_;
-  std::vector<double> higgsPhi_;
-  std::vector<double> higgsM_;
-  std::vector<double> higgsMRefit_;
-
-  std::vector<double> zllPt_;
-  std::vector<double> zllEta_;
-  std::vector<double> zllPhi_;
-  std::vector<double> zllM_;
-  std::vector<double> zlldR_; // deltaR between two leptons
-
-  std::vector<double> zjjPt_;
-  std::vector<double> zjjEta_;
-  std::vector<double> zjjPhi_;
-  std::vector<double> zjjM_;
-  std::vector<double> zjjMRefit_;
-  std::vector<double> zjjdR_; // deltaR between two jets   
-
-  std::vector<int>    HjetIndex_;
-  std::vector<int>    HjetHiggsIndex_;
-  std::vector<double> HjetE_;
-  std::vector<double> HjetPt_;
-  std::vector<double> HjetEta_;
-  std::vector<double> HjetPhi_;
-  
-  std::vector<int>    LeptonsIndex_;
-  std::vector<int>    LeptonsHiggsIndex_;
+ 
 
   // input for the angular likelihood 
   double heliLD_;
@@ -170,74 +148,6 @@ private:
   double costhetastarNT_;
 
 
-  double Hpt_;
-  double Hm_;
-
-  int numJets_;  
-
-  int EvtType_;
-  int EvtLepType_;
-  int n_pileup_;
-  int n_pileup_true_;
-
-
-  double genHmass_;
-
-  int  HLTDoubleMu_;
-  int HLTDoubleEle_;
-  int HLTMu17TkMu8_;
-/*
-  // refitted
-  std::vector<double> heliLDRefit_;
-  std::vector<double> costhetaNT1Refit_;
-  std::vector<double> costhetaNT2Refit_;
-  std::vector<double> phiNTRefit_;
-  std::vector<double> phiNT1Refit_;
-  std::vector<double> costhetastarNTRefit_;
-
-  std::vector<int>    nBTags_;
-  std::vector<int>    lepType_;
-  std::vector<int>    passBit_;
-*/
-  /*
-
-
-  std::vector<double> eID01;
-  std::vector<double> eID02;
-  std::vector<double> eID03;
-  std::vector<double> eID04;
-  std::vector<double> eID05;
-  std::vector<double> eID06;
-  std::vector<double> eID07;
-  std::vector<double> eID08;
-  std::vector<double> eID09;
-  std::vector<double> eID10;
-  std::vector<double> eID11;
-  std::vector<double> eID12;
-  std::vector<double> eID13;
-  std::vector<double> eID14;
-  std::vector<double> eID15;
-  std::vector<double> eID16;
-  std::vector<double> eID17;
-
-
-  std::vector<double> muID01;
-  std::vector<double> muID02;
-  std::vector<double> muID03;
-  std::vector<double> muID04;
-  std::vector<double> muID05;
-  std::vector<double> muID06;
-  std::vector<double> muID07;
-  std::vector<double> muID08;
-  std::vector<double> muID09;
-  std::vector<double> muID10;
-  std::vector<double> muID11;
-  std::vector<double> muID12;
-  std::vector<double> muID13;
-  std::vector<double> muID14;
-  std::vector<double> muID15;
-
-  */
   int OnlyMuon;
 
 
@@ -249,7 +159,7 @@ private:
     //JetCorrectorParameters totp;
     JetCorrectionUncertainty *uncGetter; 
     // I'm going to store modified copies here
-    pat::Jet j1,j2;
+    pat::Jet j1JEC,j2JEC;
     //const edm::EventSetup &iSetup;
     void ScaleJet(pat::Jet & dest, const pat::Jet * j,const int SetJEC);
   

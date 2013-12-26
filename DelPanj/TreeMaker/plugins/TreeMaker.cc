@@ -163,7 +163,7 @@ TreeMaker::endJob() {
    cout<<"   - Number of rejected events due to Mets10: "<<YJJECHiggTree_->_nFailMet<<endl;
   cout<<"   - Number of rejected events due to preselection: "<<YJJECHiggTree_->_nRejected<<endl;
   cout<<"   - Number of passed events: "<<YJJECHiggTree_->_nPassed<< "; Num of SB:"<<YJJECHiggTree_->_nSB <<" Num  total jetevt  save: "<<YJJECHiggTree_->_nJetEvtSave<<endl;
-  cout<<"   - From Dimu trigger: "<<YJJECHiggTree_->_nPFinalHLTDoubleMu<<" From Diele trigger: "<<YJJECHiggTree_->_nPFinalHLTDoubleEle<<" From Mu17TkMu8 trigger: "<<YJJECHiggTree_->_nPFinalHLTMu17TkMu8<<endl;
+  cout<<"   - Pass final selection from Dimu trigger: "<<YJJECHiggTree_->_nPFinalHLTDoubleMu<<" From Diele trigger: "<<YJJECHiggTree_->_nPFinalHLTDoubleEle<<" From Mu17TkMu8 trigger: "<<YJJECHiggTree_->_nPFinalHLTMu17TkMu8<<endl;
 }
 
 
