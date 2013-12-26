@@ -194,7 +194,9 @@ void YJJECHiggTree::Fill(const edm::Event& iEvent, edm::EventSetup const& iSetup
 
   EvtType_=-1;//1==signal region; 2 = sb region
   EvtLepType_=-1;//0==electron; 1 = muon
+  bool hasAPassHCand=false;
   int IndexthetheOneH=-999;// index of  the best H candidate in 1 event
+
 
 
 
@@ -547,7 +549,7 @@ edm::RefToBase<pat::Jet> jetRef(edm::Ref<PFJetCollectionAB>(jetColl,njetInColl))
       if(fabs(j1.eta())>4.7) continue;
       if(!passLooseJetID(&*jet1)) continue;
 
-      cout<<nj1<<" PUID "<<jet1->userFloat("puJetIdFlag")<<" "<<jet1->userFloat("puJetIdMVA")<<endl;     
+ //     cout<<nj1<<" PUID "<<jet1->userInt("puJetIdFlag")<<" "<<jet1->userFloat("puJetIdMVA")<<endl;     
 
       //if(jet1->userInt("isTaggable")==0) continue;//use charge tracks has |eta|<2.4
       //if(jet1->userFloat("puBeta")<0.2) continue;
@@ -599,8 +601,8 @@ const double HELICUT=0.5;
 
     //GET THE HIGGS->ZZ->LLJJ COLLECTION
     Handle<std::vector<pat::CompositeCandidate> > hzzlljj;
-    if(ilep==0) iEvent.getByLabel("hzzeejj", hzzlljj);
-    else iEvent.getByLabel("hzzmmjj", hzzlljj);
+    if(ilep==0) iEvent.getByLabel("hzzeejj","h",hzzlljj);
+    else iEvent.getByLabel("hzzmmjj","h" ,hzzlljj);
 
     // LOOP OVER HIGGS CANDIDATES
 
@@ -644,7 +646,6 @@ const double HELICUT=0.5;
 
       if(!OppCharge)continue;
 
-
       // they need to pass ID cuts
       int nPassID=0;
 
@@ -656,8 +657,7 @@ const double HELICUT=0.5;
            const pat::Electron* myEle
 	    = dynamic_cast<const pat::Electron*>(h.daughter(LEPZ)->daughter(iele)->masterClone().get());
 	  
-
-	  if(myEle->userFloat("cutIDCode")<2) continue; // 539 skim	  
+	  if(myEle->userInt("cutIDCode")<2) continue; // 539 skim	  
 	  nPassID++;
 	}
       } // if it's an electron type
@@ -671,14 +671,13 @@ const double HELICUT=0.5;
 	    = dynamic_cast<const pat::Muon*>(h.daughter(LEPZ)->daughter(imuo)->masterClone().get());
 	  std::map<std::string, bool> Pass = mu2012ID_.CutRecord(*myMuo);
 	  int passOrNot = PassAll(Pass);
-	  if(myMuo->userFloat("isIsolated")!=1)continue; // 539 skim (also pass id)	  
+	  if(myMuo->userInt("isIsolated")!=1) continue; // 539 skim (also pass id)	  
 	  nPassID++;	  	  
 	} // end of loop over muon
       } // if is a muon type
      
       
       if(nPassID < 2)continue;
-
 
       // LOOK FOR 2 JETS PASSING BETA CUTS
 
@@ -790,7 +789,6 @@ const double HELICUT=0.5;
       
       // there must be at least two jets
       if(nGoodJets < 2)continue;
-
       // number of btags
       int nBTags = 0;
       if(nMediumBTags >= 1 && nLooseBTags == 2)nBTags=2;
@@ -839,6 +837,10 @@ const double HELICUT=0.5;
      //helicity cut
        if(heliLD_local> HELICUT ) continue;
 
+
+       hasAPassHCand=true;//there is at least 1 higg cand pass selection
+
+
        //the part to save theoneH
 
        if(nBTags>maxNBTag)
@@ -858,6 +860,11 @@ const double HELICUT=0.5;
           } 
 
        }
+      
+      //To print out for testing
+
+      //cout<<"event id (all hig)"<<_nEvents<<" Leptype"<< ilep<<" All higgs "<<higgsPt_local<<" Btag "<<nBTags<<" Mjj "<<zjjM_local<<endl;
+
 
 
       
@@ -876,12 +883,16 @@ const double HELICUT=0.5;
     
  } //end of looping over leptype 
 
+     if(!hasAPassHCand) return;
+
+
+
       //SAVE THE ONE HIGGS
  
       //GET THE HIGGS->ZZ->LLJJ COLLECTION FOR THE ONE
       Handle<std::vector<pat::CompositeCandidate> > hzzlljj;
-      if(EvtLepType_==0) iEvent.getByLabel("hzzeejj", hzzlljj);
-      else iEvent.getByLabel("hzzmmjj", hzzlljj);
+      if(EvtLepType_==0) iEvent.getByLabel("hzzeejj","h", hzzlljj);
+      else iEvent.getByLabel("hzzmmjj","h", hzzlljj);
 
          
 
@@ -917,9 +928,10 @@ const double HELICUT=0.5;
       else
 	EvtType_ =2;
 
+      //cout<<"event id (the one)"<<_nEvents<<" Leptype"<<EvtLepType_ <<" All higgs "<<theOnehiggsPt_<<" Btag "<<maxNBTag<<" Mjj "<<Zjj->mass()<<endl;
 
 
-
+//cin.get();
 
 
  delete uncGetter;
