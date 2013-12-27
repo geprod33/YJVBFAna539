@@ -96,7 +96,7 @@ private:
   int HLTDoubleEle_;
   int HLTMu17TkMu8_;
 
-  int NBtagYJ_; 
+  int theOneHNBtag_; 
   
   double theOnehiggsPt_;
   double theOnehiggsEta_;
@@ -135,7 +135,7 @@ private:
   std::vector<double> JetPhi_;
   std::vector<double> JetEn_;
   std::vector<int> JetFromtheOneH_;
-
+  std::vector<double> JetPUMVA_;
 
  
 

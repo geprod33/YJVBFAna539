@@ -655,8 +655,8 @@ const double HELICUT=0.5;
 	 
 	  const pat::Muon* myMuo
 	    = dynamic_cast<const pat::Muon*>(h.daughter(LEPZ)->daughter(imuo)->masterClone().get());
-	  std::map<std::string, bool> Pass = mu2012ID_.CutRecord(*myMuo);
-	  int passOrNot = PassAll(Pass);
+	  //std::map<std::string, bool> Pass = mu2012ID_.CutRecord(*myMuo);
+	  //int passOrNot = PassAll(Pass);
 	  if(myMuo->userInt("isIsolated")!=1) continue; // 539 skim (also pass id)	  
 	  nPassID++;	  	  
 	} // end of loop over muon
@@ -870,10 +870,10 @@ const double HELICUT=0.5;
  } //end of looping over leptype 
 
      if(!hasAPassHCand) return;
-
-
-
+    
       //SAVE THE ONE HIGGS
+     
+      theOneHNBtag_=maxNBTag;
  
       //GET THE HIGGS->ZZ->LLJJ COLLECTION FOR THE ONE
       Handle<std::vector<pat::CompositeCandidate> > hzzlljj;
@@ -890,14 +890,30 @@ const double HELICUT=0.5;
  
       const reco::Candidate*  theOneLep[2];  
       for(unsigned int il=0; il < 2; il++)
-      {  	theOneLep[il]= theOneH.daughter(LEPZ)->daughter(il)->masterClone().get();}
+      {  	theOneLep[il]= theOneH.daughter(LEPZ)->daughter(il)->masterClone().get();
+        HLeptonsE_.push_back(theOneLep[il]->energy());
+        HLeptonsPt_.push_back(theOneLep[il]->pt());
+        HLeptonsEta_.push_back(theOneLep[il]->eta());
+        HLeptonsPhi_.push_back(theOneLep[il]->phi());
+         
+      }
+
+      
+
+
+
+
  
       const pat::Jet * theOneJet[2];
       for(unsigned int ijet=0; ijet < 2; ijet++)
       {	theOneJet[ijet] =
 	  dynamic_cast<const pat::Jet *>(theOneH.daughter(HADZ)->daughter(ijet)->
       					 masterClone().get());
-     }
+          HJetE_.push_back(theOneJet[ijet]->energy());
+          HJetPt_.push_back(theOneJet[ijet]->pt());
+          HJetEta_.push_back(theOneJet[ijet]->eta());
+          HJetPhi_.push_back(theOneJet[ijet]->phi());
+      }
        theOnehiggsPt_  = theOneH.pt();
        theOnehiggsEta_ = theOneH.eta();
        theOnehiggsPhi_ = theOneH.phi();
@@ -948,24 +964,28 @@ const double HELICUT=0.5;
     {
       
 
-    ScaleJet(j1JEC,dynamic_cast<const pat::Jet *>(&*jet1Itr),SetJEC_C);
+      ScaleJet(j1JEC,dynamic_cast<const pat::Jet *>(&*jet1Itr),SetJEC_C);
 
 
-      if(j1JEC.pt()<30) continue;//j1JEC is fater jec
+      if(j1JEC.pt()<30) continue;//j1JEC is afater jec
       if(fabs(j1JEC.eta())>4.7) continue;
       if(!passLooseJetID(&*jet1Itr)) continue;
-    
-    bool isTheOneHjet=false; 
-    if(fabs(theOneJet[0]->pt()-j1JEC.pt())<0.001||fabs(theOneJet[1]->pt()-j1JEC.pt())<0.001)
-    isTheOneHjet=true;
 
-    JetPt_.push_back(j1JEC.pt());
-    JetEta_.push_back(j1JEC.eta());
-    JetPhi_.push_back(j1JEC.phi());
-    JetEn_.push_back(j1JEC.energy());
-    JetFromtheOneH_.push_back(isTheOneHjet);
-    
-    }//jet1Itr loop
+      
+      int idflag=jet1Itr->userInt("puJetIdFlag");
+      //cout<<"test PU "<<PileupJetIdentifier::passJetId( idflag, PileupJetIdentifier::kLoose )<<endl; 
+      if(!PileupJetIdentifier::passJetId( idflag, PileupJetIdentifier::kLoose )) continue;
+      bool isTheOneHjet=false; 
+      if(fabs(theOneJet[0]->pt()-j1JEC.pt())<0.001||fabs(theOneJet[1]->pt()-j1JEC.pt())<0.001)
+      isTheOneHjet=true;
+
+      JetPt_.push_back(j1JEC.pt());
+      JetEta_.push_back(j1JEC.eta());
+      JetPhi_.push_back(j1JEC.phi());
+      JetEn_.push_back(j1JEC.energy());
+      JetFromtheOneH_.push_back(isTheOneHjet);
+      JetPUMVA_.push_back(jet1Itr->userFloat("puJetIdMVA")); 
+      }//jet1Itr loop
 
 
 
@@ -976,7 +996,7 @@ const double HELICUT=0.5;
 void  
 YJJECHiggTree::SetBranches(){
 
-  AddBranch(&NBtagYJ_,"NBtagYJ_"); 
+  AddBranch(&theOneHNBtag_,"theOneHNBtag_"); 
   AddBranch(&EvtType_,"EvtType_");
   AddBranch(&EvtLepType_,"EvtLeoType_");
   AddBranch(&genHmass_,"genHmass_");
@@ -1023,6 +1043,7 @@ YJJECHiggTree::SetBranches(){
   AddBranch(&JetPhi_, "JetPhi_");
   AddBranch(&JetEn_, "JetEn_");
   AddBranch(&JetFromtheOneH_, "JetFromtheOneH_"); 
+  AddBranch(&JetPUMVA_,"JetPUMVA_");
  
  
 
@@ -1060,7 +1081,7 @@ YJJECHiggTree::Clear(){
    HLTMu17TkMu8_=DUMMY;
 
 
-   NBtagYJ_= DUMMY;
+   theOneHNBtag_= DUMMY;
 
    theOnehiggsPt_=DUMMY;
    theOnehiggsEta_=DUMMY;
@@ -1098,7 +1119,7 @@ YJJECHiggTree::Clear(){
   JetPhi_.clear();
   JetEn_.clear();
   JetFromtheOneH_.clear(); 
-
+  JetPUMVA_.clear();
 
  
   
