@@ -34,6 +34,9 @@
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "PFJetSmearFactory.h"
 #include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
+#include "DataFormats/Candidate/interface/CompositeCandidate.h"
+#include "DataFormats/Candidate/interface/CompositeCandidateFwd.h"
+#include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 
 
 using namespace std;
@@ -96,26 +99,26 @@ private:
   int HLTDoubleEle_;
   int HLTMu17TkMu8_;
 
-  int theOneHNBtag_; 
+   std::vector<int> theOneHNBtag_; 
   
-  double theOnehiggsPt_;
-  double theOnehiggsEta_;
-  double theOnehiggsPhi_;
-  double theOnehiggsM_;
-  double theOnehiggsMRefit_;
+  std::vector<double> theOnehiggsPt_;
+  std::vector<double> theOnehiggsEta_;
+  std::vector<double> theOnehiggsPhi_;
+  std::vector<double> theOnehiggsM_;
+  std::vector<double> theOnehiggsMRefit_;
 
-  double theOneHzllPt_;
-  double theOneHzllEta_;
-  double theOneHzllPhi_;
-  double theOneHzllM_;
-  double theOneHzlldR_; // deltaR between two leptons
+  std::vector<double> theOneHzllPt_;
+  std::vector<double> theOneHzllEta_;
+  std::vector<double> theOneHzllPhi_;
+  std::vector<double> theOneHzllM_;
+  std::vector<double> theOneHzlldR_; // deltaR between two leptons
 
-  double theOneHzjjPt_;
-  double theOneHzjjEta_;
-  double theOneHzjjPhi_;
-  double theOneHzjjM_;
-  double theOneHzjjMRefit_;
-  double theOneHzjjdR_; // deltaR between two jets   
+  std::vector<double> theOneHzjjPt_;
+  std::vector<double> theOneHzjjEta_;
+  std::vector<double> theOneHzjjPhi_;
+  std::vector<double> theOneHzjjM_;
+  std::vector<double> theOneHzjjMRefit_;
+  std::vector<double> theOneHzjjdR_; // deltaR between two jets   
 
 
   //save hjet and hlep
@@ -159,10 +162,14 @@ private:
     //JetCorrectorParameters totp;
     JetCorrectionUncertainty *uncGetter; 
     // I'm going to store modified copies here
-    pat::Jet j1JEC,j2JEC;
+    pat::Jet j1JEC,HJ1JEC,HJ2JEC;
     //const edm::EventSetup &iSetup;
     void ScaleJet(pat::Jet & dest, const pat::Jet * j,const int SetJEC);
-  
+    
+    pat::Jet * GetJet1(const pat::CompositeCandidate & h) { ScaleJet(HJ1JEC,dynamic_cast<const pat::Jet *>(h.daughter(1)->daughter(0)->masterClone().get()),SetJEC_C ); return &HJ1JEC; }
+    pat::Jet * GetJet2(const pat::CompositeCandidate & h) { ScaleJet(HJ2JEC,dynamic_cast<const pat::Jet *>(h.daughter(1)->daughter(1)->masterClone().get()),SetJEC_C ); return &HJ2JEC; }
+
+ 
 };
 
 #endif

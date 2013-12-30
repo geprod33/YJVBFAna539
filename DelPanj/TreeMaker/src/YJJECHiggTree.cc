@@ -13,8 +13,6 @@
 
 #include "DataFormats/MuonDetId/interface/MuonSubdetId.h"
 #include "CommonTools/CandUtils/interface/AddFourMomenta.h"
-#include "DataFormats/Candidate/interface/CompositeCandidate.h"
-#include "DataFormats/Candidate/interface/CompositeCandidateFwd.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
@@ -22,7 +20,6 @@
 #include "DataFormats/PatCandidates/interface/Lepton.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 
-#include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 
 #include "DataFormats/PatCandidates/interface/TriggerEvent.h"
 
@@ -590,21 +587,41 @@ const double HELICUT=0.5;
     if(ilep==0) iEvent.getByLabel("hzzeejj","h",hzzlljj);
     else iEvent.getByLabel("hzzmmjj","h" ,hzzlljj);
 
+
+
+
+
     // LOOP OVER HIGGS CANDIDATES
 
     for(unsigned iHcand=0; iHcand<hzzlljj->size(); iHcand++){
       const pat::CompositeCandidate & h = (*hzzlljj)[iHcand];	
+/*
+     //Do jec on h cand
+     const pat::Jet * j1 = GetJet1(h);
+     const pat::Jet * j2 = GetJet2(h);
+*/
+
 
       const reco::Candidate*  myLepton[2];  
       for(unsigned int il=0; il < 2; il++)
 	myLepton[il]= h.daughter(LEPZ)->daughter(il)->masterClone().get();
 
-      const pat::Jet * myJet[2];
-      for(unsigned int ijet=0; ijet < 2; ijet++)
-	myJet[ijet] =
+       const pat::Jet * myJECJet[2];//JEC jet
+       const pat::Jet * mydefaultJet[2];//default jet
+
+       for(unsigned int ijet=0; ijet < 2; ijet++)
+       {
+	mydefaultJet[ijet] =
 	  dynamic_cast<const pat::Jet *>(h.daughter(HADZ)->daughter(ijet)->
 					 masterClone().get());
-      
+
+
+        if(ijet==0) myJECJet[ijet]= GetJet1(h);
+        else if (ijet==1) myJECJet[ijet]= GetJet2(h);             
+
+        //cout<<"mydefaultJet:"<<mydefaultJet[ijet]->pt()<<" "<<mydefaultJet[ijet]->eta()<<endl;
+       // cout<<"    myJECJet:"<<myJECJet[ijet]->pt()<<" "<<myJECJet[ijet]->eta()<<endl; 
+      }
       // LOOK FOR TWO GOOD CHARGED LEPTONS
       int nLepPtHi=0;
       int nLepPtLo=0;
@@ -612,10 +629,10 @@ const double HELICUT=0.5;
       for(unsigned int il=0; il < 2; il++){
 	
 	if(deltaR(myLepton[il]->eta(), myLepton[il]->phi(),
-		  myJet[0]->eta(), myJet[0]->phi()) < MIN_DR_JETLEP)continue;
+		  myJECJet[0]->eta(), myJECJet[0]->phi()) < MIN_DR_JETLEP)continue;
 
 	if(deltaR(myLepton[il]->eta(), myLepton[il]->phi(),
-		  myJet[1]->eta(), myJet[1]->phi()) < MIN_DR_JETLEP)continue;
+		  myJECJet[1]->eta(), myJECJet[1]->phi()) < MIN_DR_JETLEP)continue;
 
 
 	double pt = myLepton[il]->pt();	  
@@ -672,39 +689,43 @@ const double HELICUT=0.5;
       int nMediumBTags=0;
 
       for(unsigned int ijet=0; ijet < 2; ijet++){	 
+
+
 	
-	double pt  = myJet[ijet]->pt();
+	double pt  = myJECJet[ijet]->pt();
+//        double pt =HJJEC.pt();  
 	if(pt < MIN_JETPT)continue;
 	
-	double eta = myJet[ijet]->eta();
+	double eta = myJECJet[ijet]->eta();
+//        double eta=HJJEC.pt();
 	if(fabs(eta)> MAX_JETETA)continue;
 	
 	// to suppress jets from pileups
-	double puBeta = myJet[ijet]->userFloat("puBeta");
+	double puBeta = myJECJet[ijet]->userFloat("puBeta");
 	if(puBeta < MIN_JETBETA)continue;
 
 	
 	if(deltaR(myLepton[0]->eta(), myLepton[0]->phi(),
-		  myJet[ijet]->eta(), myJet[ijet]->phi()) < MIN_DR_JETLEP)continue;
+		  myJECJet[ijet]->eta(), myJECJet[ijet]->phi()) < MIN_DR_JETLEP)continue;
 
 	if(deltaR(myLepton[1]->eta(), myLepton[1]->phi(),
-		  myJet[ijet]->eta(), myJet[ijet]->phi()) < MIN_DR_JETLEP)continue;
+		  myJECJet[ijet]->eta(), myJECJet[ijet]->phi()) < MIN_DR_JETLEP)continue;
 	  
 	
-	if( !passLooseJetID(myJet[ijet]) )continue;
+	if( !passLooseJetID(myJECJet[ijet]) )continue;
 
 
 	bool isLoose  = false;
 	bool isMedium = false;
-	double jpBTag = myJet[ijet]->bDiscriminator("jetProbabilityBJetTags");
-	int flavor    = myJet[ijet]->partonFlavour();
+	double jpBTag = myJECJet[ijet]->bDiscriminator("jetProbabilityBJetTags");
+	int flavor    = myJECJet[ijet]->partonFlavour();
 	
 	if(jpBTag > MIN_BTAG_JP_LOOSE)isLoose=true;
 	if(jpBTag > MIN_BTAG_JP_MEDIUM)isMedium=true;
 /*	
  	if(!isData)
 	  {
-	    double phi = myJet[ijet]->phi();
+	    double phi = myJECJet[ijet]->phi();
 	    double sin_phi = sin(phi*1000000);
 	    // 	    int seed = abs(static_cast<int>(sin_phi*100000));	    
 	    // 	    BTagSFUtil* btsfutiljp = new BTagSFUtil("JP", seed);
@@ -718,7 +739,7 @@ const double HELICUT=0.5;
 	      BinningPointByMap measurePoint;
 	      measurePoint.reset();
 	      ///// pass in the et of the jet
-	      double jetEt = myJet[ijet]->et();
+	      double jetEt = myJECJet[ijet]->et();
 	      measurePoint.insert(BinningVariables::JetEt, jetEt);  
 	      ///// pass in the absolute eta of the jet
 	      measurePoint.insert(BinningVariables::JetEta, fabs(eta));       
@@ -806,21 +827,39 @@ const double HELICUT=0.5;
       double zjjEta_local = Zjj->eta();
       double zjjPhi_local = Zjj->phi();
       double zjjM_local   = Zjj->mass();
-      double zjjdR_local  = deltaR(myJet[0]->eta(),myJet[0]->phi(),
-				   myJet[1]->eta(),myJet[1]->phi());
+      double zjjdR_local  = deltaR(myJECJet[0]->eta(),myJECJet[0]->phi(),
+				   myJECJet[1]->eta(),myJECJet[1]->phi());
 
 
       
       double heliLD_local = goodH.userFloat("helyLD");
+
+
+      TLorentzVector VJecJ1;
+      VJecJ1.SetPtEtaPhiE(myJECJet[0]->pt(),myJECJet[0]->eta(),myJECJet[0]->phi(),myJECJet[0]->energy());      
+      TLorentzVector VJecJ2; 
+      VJecJ2.SetPtEtaPhiE(myJECJet[1]->pt(),myJECJet[1]->eta(),myJECJet[1]->phi(),myJECJet[1]->energy());
+
+      TLorentzVector VJECJJ;
+      VJECJJ=VJecJ1+VJecJ2;
+      double zjjJECM=0.0;
+      zjjJECM = VJECJJ.M();   
+     // cout<<" zjjM"<<zjjJECM<<" "<<zjjM_local<<endl;
 
       // check the dilepton Z mass
              if(zllM_local < MIN_MZ_LL)continue;
              if(zllM_local > MAX_MZ_LL)continue;
 
       // check the mass of the two jets
+             /*
              if(zjjM_local < LOOSE_MIN_MZ_JJ)continue;
              if(zjjM_local > LOOSE_MAX_MZ_JJ)continue;
-     //helicity cut
+             */
+             if(zjjJECM < LOOSE_MIN_MZ_JJ)continue;
+             if(zjjJECM > LOOSE_MAX_MZ_JJ)continue; 
+
+
+      //helicity cut
        if(heliLD_local> HELICUT ) continue;
 
 
@@ -832,15 +871,15 @@ const double HELICUT=0.5;
        if(nBTags>maxNBTag)
        {
           maxNBTag=nBTags;
-          Zdiff=fabs(zjjM_local-91.2);
+          Zdiff=fabs(zjjJECM-91.2);
           IndexthetheOneH=hcand;
           EvtLepType_=ilep;
        }
        else if(nBTags==maxNBTag)
        {
-          if(fabs(zjjM_local-91.2)<Zdiff)    
+          if(fabs(zjjJECM-91.2)<Zdiff)    
           {
-            Zdiff=fabs(zjjM_local-91.2);
+            Zdiff=fabs(zjjJECM-91.2);
             IndexthetheOneH=hcand;
             EvtLepType_=ilep; 
           } 
@@ -873,7 +912,6 @@ const double HELICUT=0.5;
     
       //SAVE THE ONE HIGGS
      
-      theOneHNBtag_=maxNBTag;
  
       //GET THE HIGGS->ZZ->LLJJ COLLECTION FOR THE ONE
       Handle<std::vector<pat::CompositeCandidate> > hzzlljj;
@@ -914,27 +952,29 @@ const double HELICUT=0.5;
           HJetEta_.push_back(theOneJet[ijet]->eta());
           HJetPhi_.push_back(theOneJet[ijet]->phi());
       }
-       theOnehiggsPt_  = theOneH.pt();
-       theOnehiggsEta_ = theOneH.eta();
-       theOnehiggsPhi_ = theOneH.phi();
-       theOnehiggsM_   = theOneH.mass();
-       theOnehiggsMRefit_ = theOneH.userFloat("HZZRefitMass");
+       
+       theOneHNBtag_.push_back(maxNBTag);
+       theOnehiggsPt_.push_back( theOneH.pt());
+       theOnehiggsEta_.push_back( theOneH.eta());
+       theOnehiggsPhi_.push_back( theOneH.phi());
+       theOnehiggsM_.push_back( theOneH.mass());
+       theOnehiggsMRefit_.push_back( theOneH.userFloat("HZZRefitMass"));
 
-       theOneHzllPt_  = Zll->pt();
-       theOneHzllEta_ = Zll->eta();
-       theOneHzllPhi_ = Zll->phi();
-       theOneHzllM_   = Zll->mass();
+       theOneHzllPt_.push_back(  Zll->pt());
+       theOneHzllEta_.push_back( Zll->eta());
+       theOneHzllPhi_.push_back( Zll->phi());
+       theOneHzllM_.push_back(  Zll->mass());
       
-       theOneHzjjPt_  = Zjj->pt();
-       theOneHzjjEta_ = Zjj->eta();
-       theOneHzjjPhi_ = Zjj->phi();
-       theOneHzjjM_   = Zjj->mass();
-       theOneHzjjMRefit_ = theOneH.userFloat("ZjjRefitMass");
+       theOneHzjjPt_.push_back( Zjj->pt());
+       theOneHzjjEta_.push_back( Zjj->eta());
+       theOneHzjjPhi_.push_back( Zjj->phi());
+       theOneHzjjM_.push_back( Zjj->mass());
+       theOneHzjjMRefit_.push_back( theOneH.userFloat("ZjjRefitMass"));
      
 
       // CHECK the one HIGGS CANDIDATE is SR or SB
 
-      if(theOneHzjjM_ > MIN_MZ_JJ && theOneHzjjM_ < MAX_MZ_JJ)
+      if(Zjj->mass() > MIN_MZ_JJ && Zjj->mass() < MAX_MZ_JJ)
       {  
          EvtType_=1;
          _nPassed++;
@@ -976,7 +1016,7 @@ const double HELICUT=0.5;
       //cout<<"test PU "<<PileupJetIdentifier::passJetId( idflag, PileupJetIdentifier::kLoose )<<endl; 
       if(!PileupJetIdentifier::passJetId( idflag, PileupJetIdentifier::kLoose )) continue;
       bool isTheOneHjet=false; 
-      if(fabs(theOneJet[0]->pt()-j1JEC.pt())<0.001||fabs(theOneJet[1]->pt()-j1JEC.pt())<0.001)
+      if(fabs(theOneJet[0]->pt()-jet1Itr->pt())<0.001||fabs(theOneJet[1]->pt()-jet1Itr->pt())<0.001)
       isTheOneHjet=true;
 
       JetPt_.push_back(j1JEC.pt());
@@ -996,13 +1036,14 @@ const double HELICUT=0.5;
 void  
 YJJECHiggTree::SetBranches(){
 
-  AddBranch(&theOneHNBtag_,"theOneHNBtag_"); 
-  AddBranch(&EvtType_,"EvtType_");
-  AddBranch(&EvtLepType_,"EvtLeoType_");
-  AddBranch(&genHmass_,"genHmass_");
-  AddBranch(&HLTDoubleMu_,"HLTDoubleMu_");
-  AddBranch(&HLTDoubleEle_,"HLTDoubleEle_");
-  AddBranch(&HLTMu17TkMu8_,"HLTMu17TkMu8_");
+  AddBranch(&EvtType_,"EvtType");
+  AddBranch(&EvtLepType_,"EvtLeoType");
+  AddBranch(&genHmass_,"genHmass");
+  AddBranch(&HLTDoubleMu_,"HLTDoubleMu");
+  AddBranch(&HLTDoubleEle_,"HLTDoubleEle");
+  AddBranch(&HLTMu17TkMu8_,"HLTMu17TkMu8");
+  
+  AddBranch(&theOneHNBtag_,"theOneHNBtag"); 
 
   AddBranch(&theOnehiggsPt_,"theOnehiggsPt");
   AddBranch(&theOnehiggsEta_,"theOnehiggsEta");
@@ -1023,37 +1064,37 @@ YJJECHiggTree::SetBranches(){
   AddBranch(&theOneHzjjMRefit_,"theOneHzjjMRefit");
   AddBranch(&theOneHzjjdR_,"theOneHzjjdR");
 
-  AddBranch(&n_pileup_,"n_pileup_");
-  AddBranch(&n_pileup_true_,"n_pileup_true_");
+  AddBranch(&n_pileup_,"n_pileup");
+  AddBranch(&n_pileup_true_,"n_pileup_true");
 
   //start vector variable
-  AddBranch(&HJetE_,"HJetE_");
-  AddBranch(&HJetPt_,"HJetPt_");
-  AddBranch(&HJetEta_,"HJetEta_");
-  AddBranch(&HJetPhi_,"HJetPhi_");
+  AddBranch(&HJetE_,"HJetE");
+  AddBranch(&HJetPt_,"HJetPt");
+  AddBranch(&HJetEta_,"HJetEta");
+  AddBranch(&HJetPhi_,"HJetPhi");
   
-  AddBranch(&HLeptonsE_,"HLeptonsE_");
-  AddBranch(&HLeptonsPt_,"HLeptonsPt_");
-  AddBranch(&HLeptonsEta_,"HLeptonsEta_");
-  AddBranch(&HLeptonsPhi_,"HLeptonsPhi_");
+  AddBranch(&HLeptonsE_,"HLeptonsE");
+  AddBranch(&HLeptonsPt_,"HLeptonsPt");
+  AddBranch(&HLeptonsEta_,"HLeptonsEta");
+  AddBranch(&HLeptonsPhi_,"HLeptonsPhi");
   
  
-  AddBranch(&JetPt_, "JetPt_");
-  AddBranch(&JetEta_, "JetEta_");
-  AddBranch(&JetPhi_, "JetPhi_");
-  AddBranch(&JetEn_, "JetEn_");
-  AddBranch(&JetFromtheOneH_, "JetFromtheOneH_"); 
-  AddBranch(&JetPUMVA_,"JetPUMVA_");
+  AddBranch(&JetPt_, "JetPt");
+  AddBranch(&JetEta_, "JetEta");
+  AddBranch(&JetPhi_, "JetPhi");
+  AddBranch(&JetEn_, "JetEn");
+  AddBranch(&JetFromtheOneH_, "JetFromtheOneH"); 
+  AddBranch(&JetPUMVA_,"JetPUMVA");
  
  
 
 
-  AddBranch(&heliLD_,"heliLD_");
-  AddBranch(&costhetaNT1_,"costhetaNT1_");
-  AddBranch(&costhetaNT2_,"costhetaNT2_");
-  AddBranch(&phiNT_,"phiNT_");
-  AddBranch(&phiNT1_,"phiNT1_");
-  AddBranch(&costhetastarNT_,"costhetastarNT_");
+  AddBranch(&heliLD_,"heliLD");
+  AddBranch(&costhetaNT1_,"costhetaNT1");
+  AddBranch(&costhetaNT2_,"costhetaNT2");
+  AddBranch(&phiNT_,"phiNT");
+  AddBranch(&phiNT1_,"phiNT1");
+  AddBranch(&costhetastarNT_,"costhetastarNT");
    
 
   
@@ -1081,26 +1122,26 @@ YJJECHiggTree::Clear(){
    HLTMu17TkMu8_=DUMMY;
 
 
-   theOneHNBtag_= DUMMY;
+   theOneHNBtag_.clear();
 
-   theOnehiggsPt_=DUMMY;
-   theOnehiggsEta_=DUMMY;
-   theOnehiggsPhi_=DUMMY;
-   theOnehiggsM_=DUMMY;
-   theOnehiggsMRefit_=DUMMY;
+   theOnehiggsPt_.clear();
+   theOnehiggsEta_.clear();
+   theOnehiggsPhi_.clear();
+   theOnehiggsM_.clear();
+   theOnehiggsMRefit_.clear();
 
-   theOneHzllPt_=DUMMY;
-   theOneHzllEta_=DUMMY;
-   theOneHzllPhi_=DUMMY;
-   theOneHzllM_=DUMMY;
-   theOneHzlldR_=DUMMY; // deltaR between two leptons
+   theOneHzllPt_.clear();
+   theOneHzllEta_.clear();
+   theOneHzllPhi_.clear();
+   theOneHzllM_.clear();
+   theOneHzlldR_.clear(); // deltaR between two leptons
 
-   theOneHzjjPt_=DUMMY;
-   theOneHzjjEta_=DUMMY;
-   theOneHzjjPhi_=DUMMY;
-   theOneHzjjM_=DUMMY;
-   theOneHzjjMRefit_=DUMMY;
-   theOneHzjjdR_=DUMMY; // deltaR between two jets   
+   theOneHzjjPt_.clear();
+   theOneHzjjEta_.clear();
+   theOneHzjjPhi_.clear();
+   theOneHzjjM_.clear();
+   theOneHzjjMRefit_.clear();
+   theOneHzjjdR_.clear(); // deltaR between two jets   
 
   HJetE_.clear();
   HJetPt_.clear();
