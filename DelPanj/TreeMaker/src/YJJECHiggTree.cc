@@ -855,9 +855,10 @@ const double HELICUT=0.5;
              if(zjjM_local < LOOSE_MIN_MZ_JJ)continue;
              if(zjjM_local > LOOSE_MAX_MZ_JJ)continue;
              */
+             
              if(zjjJECM < LOOSE_MIN_MZ_JJ)continue;
              if(zjjJECM > LOOSE_MAX_MZ_JJ)continue; 
-
+             
 
       //helicity cut
        if(heliLD_local> HELICUT ) continue;
@@ -978,6 +979,9 @@ const double HELICUT=0.5;
       {  
          EvtType_=1;
          _nPassed++;
+        if(HLTDoubleMu_==1) {_nPFinalHLTDoubleMu++;}
+        if(HLTDoubleEle_==1){_nPFinalHLTDoubleEle++;}
+        if(HLTMu17TkMu8_==1){_nPFinalHLTMu17TkMu8++;}
       }
       else
       { 
@@ -989,9 +993,6 @@ const double HELICUT=0.5;
 
 
 
-        if(HLTDoubleMu_==1) {_nPFinalHLTDoubleMu++;}
-        if(HLTDoubleEle_==1){_nPFinalHLTDoubleEle++;}
-        if(HLTMu17TkMu8_==1){_nPFinalHLTMu17TkMu8++;}
 
 
 
@@ -1037,11 +1038,16 @@ void
 YJJECHiggTree::SetBranches(){
 
   AddBranch(&EvtType_,"EvtType");
-  AddBranch(&EvtLepType_,"EvtLeoType");
+  AddBranch(&EvtLepType_,"EvtLepType");
   AddBranch(&genHmass_,"genHmass");
   AddBranch(&HLTDoubleMu_,"HLTDoubleMu");
   AddBranch(&HLTDoubleEle_,"HLTDoubleEle");
   AddBranch(&HLTMu17TkMu8_,"HLTMu17TkMu8");
+  
+  AddBranch(&n_pileup_,"n_pileup");
+  AddBranch(&n_pileup_true_,"n_pileup_true");
+
+  //start vector variable
   
   AddBranch(&theOneHNBtag_,"theOneHNBtag"); 
 
@@ -1064,10 +1070,7 @@ YJJECHiggTree::SetBranches(){
   AddBranch(&theOneHzjjMRefit_,"theOneHzjjMRefit");
   AddBranch(&theOneHzjjdR_,"theOneHzjjdR");
 
-  AddBranch(&n_pileup_,"n_pileup");
-  AddBranch(&n_pileup_true_,"n_pileup_true");
 
-  //start vector variable
   AddBranch(&HJetE_,"HJetE");
   AddBranch(&HJetPt_,"HJetPt");
   AddBranch(&HJetEta_,"HJetEta");
