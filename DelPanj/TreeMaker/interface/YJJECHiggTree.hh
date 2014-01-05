@@ -32,7 +32,9 @@
 #include "CondFormats/JetMETObjects/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
-#include "PFJetSmearFactory.h"
+//#include "PFJetSmearFactory.h"
+#include "CMGTools/External/interface/PileupJetIdentifier.h"
+
 #include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
 #include "DataFormats/Candidate/interface/CompositeCandidate.h"
 #include "DataFormats/Candidate/interface/CompositeCandidateFwd.h"
